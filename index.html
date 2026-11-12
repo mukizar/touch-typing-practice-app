@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Touch Typing Practice</title>
+<meta name="description" content="Touch typing practice for numbers and symbols: no backspace, adaptive drills on the keys you miss, and a finger guide.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centered work column — live stats strip, the line you type, finger guide, then key-by-key progress. */
+:root {
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #f4f6f9;
+  --ink: #18202c;
+  --muted: #5b6676;
+  --line: #d3d9e2;
+  --accent: #2c55c9;
+  --ok: #1f8a4c;
+  --bad: #c9302c;
+  --warn: #b7791f;
+  --key-bg: #f7f8fa;
+  --key-edge: #c3cad5;
+  --hand-fill: #fbfcfe;
+  --hand-fill-alpha: 0.62;
+  --hand-line: #7f8794;
+  /* finger colours — mirrored hands share a hue family */
+  --f-lp: #9b6bd6;
+  --f-lr: #3f86d8;
+  --f-lm: #2e9e6b;
+  --f-li: #e07b2c;
+  --f-ri: #d4a017;
+  --f-rm: #2e9e6b;
+  --f-rr: #3f86d8;
+  --f-rp: #9b6bd6;
+  --f-th: #7a8494;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --u: clamp(20px, calc((100vw - 48px) / 15.4), 52px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #1a2029; --surface-2: #151a22; --ink: #e6ebf2; --muted: #95a0b0;
+    --line: #2b3441; --accent: #7b9cff; --ok: #4fc483; --bad: #ff6b63; --warn: #e6b450;
+    --key-bg: #222a35; --key-edge: #364151; --hand-fill: #2b3442; --hand-fill-alpha: 0.6; --hand-line: #9aa5b6; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #1a2029; --surface-2: #151a22; --ink: #e6ebf2; --muted: #95a0b0;
+  --line: #2b3441; --accent: #7b9cff; --ok: #4fc483; --bad: #ff6b63; --warn: #e6b450;
+  --key-bg: #222a35; --key-edge: #364151; --hand-fill: #2b3442; --hand-fill-alpha: 0.6; --hand-line: #9aa5b6; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; transition: opacity 0.4s; }
+/* while typing the header fades back; moving the mouse brings it forward again */
+body.typing header.top { opacity: 0.22; }
+body.typing header.top:hover, body.typing header.top:focus-within { opacity: 1; }
+.brand h1 { font: 600 20px/1.1 var(--font-mono); margin: 0; letter-spacing: -0.02em; }
+.brand h1 span { color: var(--accent); }
+.tabs { display: flex; gap: 4px; }
+.tab { background: transparent; border-color: transparent; color: var(--muted); font-size: 13px; }
+.tab:hover { color: var(--ink); border-color: var(--line); }
+.tab[aria-expanded="true"] { background: var(--surface); border-color: var(--line); color: var(--ink); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.drawer-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 12px; color: var(--muted); }
+.drawer-foot .legend { justify-content: flex-start; }
+.ctl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctl label, .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+select, input[type=text], button {
+  font: 500 14px var(--font-ui); color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px;
+}
+input[type=text] { font-family: var(--font-mono); width: 11ch; letter-spacing: 0.1em; }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toggles { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; padding-bottom: 6px; }
+.toggles label { font-size: 13px; display: flex; gap: 5px; align-items: center; color: var(--ink); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.spacer { flex: 1; }
+
+.stage-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 16px; min-height: 20px; }
+.mini { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mini b { font: 600 13px var(--font-mono); color: var(--ink); }
+
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.stage.flash-bad { animation: shake 0.18s linear; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.reinforce { min-height: 20px; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.reinforce .k { font: 600 12px var(--font-mono); color: var(--bad); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; }
+.line { font: 500 clamp(18px, 3.4vw, 30px)/1.5 var(--font-mono); letter-spacing: 0.02em; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.5em; }
+.line.next { font-size: clamp(14px, 2.2vw, 19px); color: var(--muted); opacity: 0.7; }
+.ch { position: relative; border-radius: 3px; }
+.ch.done { color: var(--muted); opacity: 0.55; }
+.ch.done.fixed { color: var(--bad); opacity: 0.85; text-decoration: underline wavy; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.ch.cur { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 0 -3px 0 var(--accent); }
+.ch.cur.err { background: color-mix(in srgb, var(--bad) 22%, transparent); box-shadow: inset 0 -3px 0 var(--bad); }
+.ch.sp { color: var(--line); }
+.ch.sp.cur { color: var(--accent); }
+.hint { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 14px; color: var(--muted); min-height: 24px; }
+.hint .big { font: 600 18px var(--font-mono); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 9px; }
+.hint .finger { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-weight: 500; }
+.hint .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fc); }
+.hint .miss { color: var(--bad); font-weight: 500; }
+.nodelete { position: absolute; right: 16px; bottom: 14px; font: 600 12px var(--font-mono); color: var(--bad); opacity: 0; transition: opacity 0.2s; }
+.nodelete.show { opacity: 1; }
+.focus-cue { font-size: 12px; color: var(--muted); }
+
+.guide { padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 14px; overflow-x: auto; }
+.kb { display: flex; flex-direction: column; gap: calc(var(--u) * 0.09); }
+.row { display: flex; gap: calc(var(--u) * 0.09); }
+.key {
+  --fc: var(--f-th);
+  width: calc(var(--u) * var(--w, 1) - var(--u) * 0.09); height: calc(var(--u) * 0.92);
+  background: color-mix(in srgb, var(--fc) 16%, var(--key-bg));
+  border: 1px solid color-mix(in srgb, var(--fc) 35%, var(--key-edge));
+  border-bottom-width: 3px; border-radius: calc(var(--u) * 0.14);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  font: 500 calc(var(--u) * 0.3)/1.05 var(--font-mono); color: var(--ink); user-select: none;
+  transition: transform 0.06s, background 0.12s; flex: none;
+}
+.key .s { font-size: calc(var(--u) * 0.22); color: var(--muted); }
+.key.wide { font-size: calc(var(--u) * 0.2); font-family: var(--font-ui); color: var(--muted); }
+.key.target { background: var(--fc); color: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc) 45%, transparent); }
+.key.target .s { color: #fff; }
+.key.target.err { animation: pulse 0.6s ease-in-out infinite alternate; }
+@keyframes pulse { to { box-shadow: 0 0 0 6px color-mix(in srgb, var(--bad) 55%, transparent); } }
+.key.hit { transform: translateY(2px); }
+.key.miss { background: var(--bad); color: #fff; }
+.key.home::after { content: ""; width: 28%; height: 2px; background: currentColor; opacity: 0.45; margin-top: 2px; border-radius: 1px; }
+.key.disabled { opacity: 0.45; text-decoration: line-through; }
+.kb.heat .key { background: color-mix(in srgb, var(--bad) var(--heat, 0%), var(--key-bg)); border-color: var(--key-edge); }
+.kb.heat .key.target { background: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--fc); margin-right: 5px; vertical-align: -1px; }
+.kbwrap { position: relative; flex: none; }
+.kbwrap.with-hands { padding-bottom: calc(var(--u) * 1.3); }
+svg.handlayer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+svg.handlayer .hand-fill { opacity: var(--hand-fill-alpha); fill: var(--hand-fill); stroke: var(--hand-fill); stroke-linejoin: round; }
+svg.handlayer .hand-line { fill: var(--hand-line); }
+svg.handlayer .hot-fill { opacity: 0.2; }
+svg.handlayer .hot-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel h2 { font: 600 15px var(--font-ui); margin: 0; }
+.panel .sub { margin: 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.cell { border: 1px solid var(--line); border-left: 4px solid var(--st); border-radius: 7px; padding: 6px 8px; background: var(--surface-2); cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 1px; font-family: var(--font-ui); }
+.cell .c { font: 600 18px var(--font-mono); }
+.cell .a { font: 500 12px var(--font-mono); font-variant-numeric: tabular-nums; }
+.cell .m { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell.focus { outline: 2px dashed var(--accent); outline-offset: 1px; }
+.st-new { --st: var(--line); }
+.st-weak { --st: var(--bad); }
+.st-learning { --st: var(--warn); }
+.st-mastered { --st: var(--ok); }
+.keyrow { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.keyrow i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--st); margin-right: 5px; vertical-align: -1px; }
+
+.overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; width: min(560px, 100%); max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.18); }
+.card h2 { margin: 0; font: 600 20px var(--font-ui); }
+.big4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.big4 div { background: var(--surface-2); border-radius: 8px; padding: 10px; }
+.big4 b { display: block; font: 600 22px var(--font-mono); font-variant-numeric: tabular-nums; }
+.big4 span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.delta { font-size: 12px; font-weight: 500; }
+.delta.up { color: var(--ok); } .delta.down { color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px var(--font-mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; }
+.chip.bad { border-color: color-mix(in srgb, var(--bad) 60%, var(--line)); }
+.mastery { display: grid; grid-template-columns: 2.2em 1fr 3.5em; gap: 4px 10px; align-items: center; font: 500 13px var(--font-mono); }
+.bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--st); }
+.muted { color: var(--muted); font-size: 13px; margin: 0; }
+.confirm { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--bad); }
+
+@media (max-width: 640px) {
+  .big4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage { padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>touch typing <span>practice</span></h1></div>
+    <nav class="tabs" aria-label="Panels">
+      <button type="button" class="tab" id="btnSettings" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
+      <button type="button" class="tab" id="btnProgress" aria-expanded="false" aria-controls="progressPanel">Progress</button>
+    </nav>
+  </header>
+
+  <section class="panel" id="settingsPanel" aria-label="Settings" hidden>
+    <div class="controls">
+      <div class="ctl">
+        <label for="mode">Drill</label>
+        <select id="mode">
+          <option value="adaptive">Adaptive (numbers + symbols + words)</option>
+          <option value="numbers">Numbers only</option>
+          <option value="symbols">Symbols</option>
+          <option value="code">Code &amp; data</option>
+          <option value="focus">Focus keys only</option>
+        </select>
+      </div>
+      <div class="ctl">
+        <label for="focus">Focus keys</label>
+        <input id="focus" type="text" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="ctl">
+        <label for="lessonLen">Lesson</label>
+        <select id="lessonLen">
+          <option value="5">5 lines</option>
+          <option value="10">10 lines</option>
+          <option value="20">20 lines</option>
+        </select>
+      </div>
+      <div class="ctl">
+        <label for="six">Type 6 with</label>
+        <select id="six">
+          <option value="right">Right index</option>
+          <option value="left">Left index</option>
+        </select>
+      </div>
+      <div class="toggles">
+        <label><input id="tKeyboard" type="checkbox"> Keyboard</label>
+        <label><input id="tHands" type="checkbox"> Hands over keys</label>
+        <label><input id="tHeat" type="checkbox"> Error heatmap</label>
+      </div>
+      <div class="spacer"></div>
+      <div class="ctl">
+        <button id="newLine" type="button">Skip line</button>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <div class="legend" id="legend"></div>
+      <span>No backspace: a wrong key holds the cursor until you type the right one.</span>
+    </div>
+  </section>
+
+  <section class="panel" id="progressPanel" aria-label="Key progress" hidden>
+    <h2>Key progress</h2>
+    <p class="sub">Accuracy on your last 30 tries of each key, and how long you take to find it. Click a key to add it to or remove it from your focus keys.</p>
+    <div class="keyrow">
+      <span class="st-weak"><i></i>Weak</span>
+      <span class="st-learning"><i></i>Learning</span>
+      <span class="st-mastered"><i></i>Mastered (95%+ and quick)</span>
+      <span class="st-new"><i></i>Not enough data</span>
+    </div>
+    <div class="label">Number row</div>
+    <div class="grid" id="gridDigits"></div>
+    <div class="label">Symbols</div>
+    <div class="grid" id="gridSymbols"></div>
+    <div class="confirm" id="resetRow">
+      <button id="reset" type="button">Reset all progress</button>
+    </div>
+  </section>
+
+  <section class="stage" id="stage" aria-live="polite">
+    <div class="stage-top">
+      <div class="reinforce" id="reinforce"></div>
+      <div class="mini" aria-label="This lesson">
+        <span><b id="sAcc">100%</b> accuracy</span>
+        <span><b id="sWpm">0</b> wpm</span>
+        <span><b id="sStreak">0</b> streak</span>
+        <span>line <b id="sLine">1/10</b></span>
+      </div>
+    </div>
+    <div class="line" id="line"></div>
+    <div class="line next" id="next"></div>
+    <div class="hint" id="hint"></div>
+    <div class="nodelete" id="noDelete">no deleting, type the right key</div>
+  </section>
+
+  <section class="guide" id="guide">
+    <div class="kbwrap" id="kbwrap">
+      <div class="kb" id="kb"></div>
+      <svg class="handlayer" id="hands" aria-hidden="true"></svg>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="sumTitle">
+    <h2 id="sumTitle">Lesson complete</h2>
+    <div class="big4" id="sumBig"></div>
+    <div id="sumMissed"></div>
+    <div id="sumConf"></div>
+    <div id="sumFocus"></div>
+    <button class="primary" id="nextLesson" type="button">Next lesson (Enter)</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+(() => {
+  // ---------- constants ----------
+  const STORE_KEY = 'touch-typing-practice.v1';
+  const RECENT = 30;
+  const DIGITS = '1234567890';
+  const SYMBOLS = '!@#$%^&*()-_=+[]{};:\'",.<>/?\\|`~';
+  const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+  const DEFAULTS = { mode: 'adaptive', focus: '456790', lessonLines: 10, six: 'right', keyboard: true, hands: true, heat: false };
+
+  const FINGERS = {
+    lp: { name: 'Left pinky', home: 'A' }, lr: { name: 'Left ring', home: 'S' },
+    lm: { name: 'Left middle', home: 'D' }, li: { name: 'Left index', home: 'F' },
+    ri: { name: 'Right index', home: 'J' }, rm: { name: 'Right middle', home: 'K' },
+    rr: { name: 'Right ring', home: 'L' }, rp: { name: 'Right pinky', home: ';' },
+    th: { name: 'Thumb', home: 'space' },
+  };
+
+  // ---------- persistence ----------
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  const settings = Object.assign({}, DEFAULTS, saved.settings || {});
+  let stats = saved.stats || {};
+  let history = saved.history || [];
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ settings, stats, history: history.slice(-300) })); } catch (e) { /* storage unavailable */ }
+  }
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const showChar = (c) => (c === ' ' ? 'space' : c);
+
+  // ---------- keyboard model (US layout) ----------
+  function sixFinger() { return settings.six === 'left' ? 'li' : 'ri'; }
+  function layout() {
+    const six = sixFinger();
+    return [
+      [['`', '~', 'lp'], ['1', '!', 'lp'], ['2', '@', 'lr'], ['3', '#', 'lm'], ['4', '$', 'li'], ['5', '%', 'li'], ['6', '^', six], ['7', '&', 'ri'], ['8', '*', 'rm'], ['9', '(', 'rr'], ['0', ')', 'rp'], ['-', '_', 'rp'], ['=', '+', 'rp'], { id: 'Backspace', label: 'backspace', w: 2, f: 'rp', disabled: true }],
+      [{ id: 'Tab', label: 'tab', w: 1.5, f: 'lp' }, ...'qwert'.split('').map((c, i) => [c, c.toUpperCase(), ['lp', 'lr', 'lm', 'li', 'li'][i]]), ...'yuiop'.split('').map((c, i) => [c, c.toUpperCase(), ['ri', 'ri', 'rm', 'rr', 'rp'][i]]), ['[', '{', 'rp'], [']', '}', 'rp'], ['\\', '|', 'rp', 1.5]],
+      [{ id: 'Caps', label: 'caps', w: 1.75, f: 'lp' }, ...'asdfg'.split('').map((c, i) => [c, c.toUpperCase(), ['lp', 'lr', 'lm', 'li', 'li'][i]]), ...'hjkl'.split('').map((c, i) => [c, c.toUpperCase(), ['ri', 'ri', 'rm', 'rr'][i]]), [';', ':', 'rp'], ["'", '"', 'rp'], { id: 'Enter', label: 'enter', w: 2.25, f: 'rp' }],
+      [{ id: 'ShiftL', label: 'shift', w: 2.25, f: 'lp' }, ...'zxcvb'.split('').map((c, i) => [c, c.toUpperCase(), ['lp', 'lr', 'lm', 'li', 'li'][i]]), ...'nm'.split('').map((c, i) => [c, c.toUpperCase(), ['ri', 'ri'][i]]), [',', '<', 'rm'], ['.', '>', 'rr'], ['/', '?', 'rp'], { id: 'ShiftR', label: 'shift', w: 2.75, f: 'rp' }],
+      [{ id: 'Spacer', w: 3.75, spacer: true }, { id: 'Space', label: 'space', w: 6.25, f: 'th' }],
+    ];
+  }
+  const HOME_KEYS = new Set(['f', 'j']);
+  const STRETCH_L = new Set(['5', 't', 'g', 'b']);
+  const STRETCH_R = new Set(['y', 'h', 'n']);
+  const OUTER = new Set(['`', '-', '=', '[', ']', '\\', "'"]);
+
+  let charMap = {}; // char -> {el, base, finger, shift, row}
+  let specialEls = {};
+
+  function buildKeyboard() {
+    const kb = $('kb');
+    kb.innerHTML = '';
+    charMap = {}; specialEls = {};
+    layout().forEach((row, r) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'row';
+      row.forEach((k) => {
+        const el = document.createElement('div');
+        if (Array.isArray(k)) {
+          const [base, shifted, f, w] = k;
+          el.className = 'key' + (HOME_KEYS.has(base) ? ' home' : '');
+          el.style.setProperty('--fc', `var(--f-${f})`);
+          if (w) el.style.setProperty('--w', w);
+          const isLetter = /[a-z]/.test(base);
+          el.innerHTML = isLetter ? `<span>${esc(shifted)}</span>` : `<span class="s">${esc(shifted)}</span><span>${esc(base)}</span>`;
+          charMap[base] = { el, base, finger: f, shift: false, row: r };
+          charMap[shifted] = { el, base, finger: f, shift: true, row: r };
+        } else {
+          if (k.spacer) { el.style.width = `calc(var(--u) * ${k.w} - var(--u) * 0.09)`; el.style.flex = 'none'; rowEl.appendChild(el); return; }
+          el.className = 'key wide' + (k.disabled ? ' disabled' : '');
+          el.style.setProperty('--fc', `var(--f-${k.f})`);
+          el.style.setProperty('--w', k.w);
+          el.textContent = k.label;
+          specialEls[k.id] = el;
+          if (k.id === 'Space') charMap[' '] = { el, base: ' ', finger: 'th', shift: false, row: 4 };
+        }
+        rowEl.appendChild(el);
+      });
+      kb.appendChild(rowEl);
+    });
+    $('legend').innerHTML = ['lp', 'lr', 'lm', 'li', 'ri', 'th'].map((f) => {
+      const label = { lp: 'Pinkies', lr: 'Ring', lm: 'Middle', li: 'Left index', ri: 'Right index', th: 'Thumbs' }[f];
+      return `<span style="--fc: var(--f-${f})"><i></i>${label}</span>`;
+    }).join('');
+  }
+
+  // ---------- hand overlay ----------
+  // Fingertips rest on the home keys and thumbs on the space bar. The finger for the next key
+  // slides out to it; for shifted characters the other hand's pinky reaches for Shift.
+  const HOME = { lp: 'a', lr: 's', lm: 'd', li: 'f', ri: 'j', rm: 'k', rr: 'l', rp: ';' };
+  // knuckle position relative to each finger's home key, in key widths [dx, dy]
+  const KNUCKLE = { lp: [0.35, 1.55], lr: [0.15, 1.85], lm: [0, 1.95], li: [-0.1, 1.85], ri: [0.1, 1.85], rm: [0, 1.95], rr: [-0.15, 1.85], rp: [-0.35, 1.55] };
+  // finger widths at the knuckle and at the tip, in key widths
+  const WIDTH = { lp: [0.68, 0.58], lr: [0.78, 0.66], lm: [0.82, 0.7], li: [0.84, 0.72], ri: [0.84, 0.72], rm: [0.82, 0.7], rr: [0.78, 0.66], rp: [0.68, 0.58], lt: [0.9, 0.74], rt: [0.9, 0.74] };
+  const FINGER_IDS = ['lp', 'lr', 'lm', 'li', 'ri', 'rm', 'rr', 'rp', 'lt', 'rt'];
+  const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let geo = null, tips = {}, goalEl = {}, active = new Set(), raf = 0;
+
+  // key centre in the overlay's coordinates (.kbwrap is the keys' offsetParent)
+  const kc = (el) => ({ x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop + el.offsetHeight / 2 });
+
+  function measureHands() {
+    const wrap = $('kbwrap');
+    tips = {};
+    if (!settings.hands || !settings.keyboard || wrap.offsetParent === null) { geo = null; $('hands').innerHTML = ''; return; }
+    const u = kc(charMap['s'].el).x - kc(charMap['a'].el).x;
+    const home = {};
+    Object.entries(HOME).forEach(([f, c]) => { home[f] = kc(charMap[c].el); });
+    const space = kc(charMap[' '].el);
+    home.lt = { x: space.x - 0.85 * u, y: space.y };
+    home.rt = { x: space.x + 0.85 * u, y: space.y };
+    geo = { u, home, w: wrap.offsetWidth, h: wrap.offsetHeight };
+    $('hands').setAttribute('viewBox', `0 0 ${wrap.offsetWidth} ${wrap.offsetHeight}`);
+  }
+  function goalPos(f) {
+    const el = goalEl[f];
+    if (!el) return geo.home[f];
+    const c = kc(el);
+    // pinkies press the near end of the wide Shift keys
+    if (el === specialEls.ShiftR) c.x = el.offsetLeft + geo.u * 0.55;
+    if (el === specialEls.ShiftL) c.x = el.offsetLeft + el.offsetWidth - geo.u * 0.55;
+    return c;
+  }
+  function setHandGoals(exp) {
+    goalEl = {}; active = new Set();
+    const m = charMap[exp];
+    if (m) {
+      if (m.finger === 'th') { active.add('lt'); active.add('rt'); }
+      else {
+        goalEl[m.finger] = m.el; active.add(m.finger);
+        if (m.shift) {
+          const p = m.finger[0] === 'l' ? 'rp' : 'lp';
+          goalEl[p] = specialEls[p === 'rp' ? 'ShiftR' : 'ShiftL']; active.add(p);
+        }
+      }
+    }
+    animateHands();
+  }
+  function animateHands() {
+    if (!geo) return;
+    cancelAnimationFrame(raf);
+    const step = () => {
+      let moving = false;
+      FINGER_IDS.forEach((f) => {
+        const g = goalPos(f);
+        const t = tips[f] || (tips[f] = { x: g.x, y: g.y });
+        const dx = g.x - t.x, dy = g.y - t.y;
+        if (!reduceMotion && Math.abs(dx) + Math.abs(dy) > 0.6) { t.x += dx * 0.35; t.y += dy * 0.35; moving = true; }
+        else { t.x = g.x; t.y = g.y; }
+      });
+      drawHands();
+      raf = moving ? requestAnimationFrame(step) : 0;
+    };
+    step();
+  }
+  // Each hand is one see-through shape with a single outline (drawn through a mask, so there are
+  // no seams where fingers join the palm). The finger in use is drawn on top in its finger colour.
+  function drawHands() {
+    const { u, home, w, h } = geo;
+    const f1 = (n) => n.toFixed(1);
+    const pt = (q) => f1(q[0]) + ' ' + f1(q[1]);
+    const rest = (f) => ({ x: home[f].x + KNUCKLE[f][0] * u, y: home[f].y + KNUCKLE[f][1] * u });
+    const knuckle = (f) => {
+      // the knuckle follows a reaching fingertip a little, as a real hand would
+      const r = rest(f), t = tips[f], hm = home[f];
+      return { x: r.x + (t.x - hm.x) * 0.18, y: r.y + (t.y - hm.y) * 0.22 };
+    };
+    const thumbBase = (side) => {
+      const k = rest(side === 'l' ? 'li' : 'ri');
+      return { x: k.x + (side === 'l' ? -0.2 : 0.2) * u, y: k.y + 2.4 * u };
+    };
+    // tapered finger: straight sides from knuckle to tip, rounded fingertip
+    const fingerPath = (B, T, wb, wt, open) => {
+      const dx = T.x - B.x, dy = T.y - B.y, len = Math.hypot(dx, dy) || 1;
+      const px = -dy / len, py = dx / len;
+      const BL = [B.x + px * wb, B.y + py * wb], TL = [T.x + px * wt, T.y + py * wt];
+      const TR = [T.x - px * wt, T.y - py * wt], BR = [B.x - px * wb, B.y - py * wb];
+      return `M${pt(BL)} L${pt(TL)} A${f1(wt)} ${f1(wt)} 0 0 0 ${pt(TR)} L${pt(BR)}${open ? '' : ' Z'}`;
+    };
+    const palmPath = (side) => {
+      const [p, i] = side === 'l' ? ['lp', 'li'] : ['rp', 'ri'];
+      const sg = side === 'l' ? 1 : -1;
+      const P = rest(p), I = rest(i);
+      const bottom = h + 2 * u; // runs off the bottom edge
+      return 'M' + [
+        [P.x - sg * 0.38 * u, P.y - 0.1 * u], [I.x + sg * 0.42 * u, I.y - 0.1 * u],
+        [I.x + sg * 0.5 * u, I.y + 0.8 * u], [I.x + sg * 0.3 * u, bottom], [P.x - sg * 0.1 * u, bottom],
+      ].map(pt).join(' L') + ' Z';
+    };
+    const R = 0.4 * u;                    // palm corner rounding
+    const o = Math.max(1.2, u * 0.035);   // outline width
+    const palms = [palmPath('l'), palmPath('r')];
+    const fingers = [], hot = [];
+    FINGER_IDS.forEach((f) => {
+      const thumb = f === 'lt' || f === 'rt';
+      const B = thumb ? thumbBase(f[0]) : knuckle(f);
+      const T = { x: tips[f].x, y: tips[f].y + 0.1 * u };
+      const wb = WIDTH[f][0] * u / 2, wt = WIDTH[f][1] * u / 2;
+      // an active finger leaves the hand shape so the key it presses stays bright;
+      // thumbs stay part of it because they rest on the space bar anyway
+      if (active.has(f)) hot.push({ f: thumb ? 'th' : f, closed: fingerPath(B, T, wb, wt), open: fingerPath(B, T, wb, wt, true) });
+      if (!active.has(f) || thumb) fingers.push(fingerPath(B, T, wb, wt));
+    });
+    const shapes = (palmStroke, fingerStroke) =>
+      palms.map((d) => `<path d="${d}" stroke-width="${f1(palmStroke)}"/>`).join('') +
+      fingers.map((d) => `<path d="${d}"${fingerStroke ? ` stroke-width="${f1(fingerStroke)}"` : ' stroke="none"'}/>`).join('');
+    $('hands').innerHTML =
+      `<defs><mask id="handOutline" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}">` +
+        `<g fill="#fff" stroke="#fff" stroke-linejoin="round">${shapes(R + 2 * o, 2 * o)}</g>` +
+        `<g fill="#000" stroke="#000" stroke-linejoin="round">${shapes(R, 0)}</g>` +
+      `</mask></defs>` +
+      `<g class="hand-fill">${shapes(R, 0)}</g>` +
+      `<rect class="hand-line" x="0" y="0" width="${w}" height="${h}" mask="url(#handOutline)"/>` +
+      hot.map((x) => `<path class="hot-fill" d="${x.closed}" style="fill: var(--f-${x.f})"/><path class="hot-line" d="${x.open}" style="stroke: color-mix(in srgb, var(--f-${x.f}) 62%, var(--ink))"/>`).join('');
+  }
+
+  // ---------- per-key statistics ----------
+  function peek(c) { return stats[c]; }
+  function st(c) { return stats[c] || (stats[c] = { n: 0, err: 0, ms: 0, recent: [], conf: {} }); }
+  function pushRecent(a, v) { a.push(v); if (a.length > RECENT) a.shift(); }
+  function recordHit(c, ms) {
+    const s = st(c); s.n++; pushRecent(s.recent, 1);
+    if (ms != null) s.ms = s.ms ? s.ms * 0.8 + ms * 0.2 : ms;
+  }
+  function recordMiss(c, typed) {
+    const s = st(c); s.n++; s.err++; pushRecent(s.recent, 0);
+    s.conf[typed] = (s.conf[typed] || 0) + 1;
+  }
+  function focusSet() { return new Set(settings.focus.split('')); }
+  function isFocus(c) { return settings.focus.includes(c); }
+
+  let medianCache = 380;
+  function computeMedian() {
+    const v = Object.entries(stats).filter(([c, s]) => c !== ' ' && s.ms && s.n >= 5).map(([, s]) => s.ms).sort((a, b) => a - b);
+    medianCache = v.length >= 5 ? v[Math.floor(v.length / 2)] : 380;
+  }
+  function recentAcc(c) { const s = peek(c); return s && s.recent.length ? sum(s.recent) / s.recent.length : null; }
+  function errRate(c) {
+    const s = peek(c);
+    const prior = isFocus(c) ? 0.35 : LETTERS.includes(c) ? 0.03 : 0.12;
+    const r = s ? s.recent : [];
+    return (r.length - sum(r) + prior * 4) / (r.length + 4);
+  }
+  function slowness(c) { const s = peek(c); return !s || !s.ms || s.n < 5 ? 1.2 : clamp(s.ms / medianCache, 0.6, 3); }
+  function mastered(c) {
+    const s = peek(c);
+    return !!s && s.recent.length >= 20 && recentAcc(c) >= 0.95 && slowness(c) <= 1.3;
+  }
+  function status(c) {
+    const s = peek(c);
+    if (!s || s.recent.length < 5) return 'new';
+    if (mastered(c)) return 'mastered';
+    if (recentAcc(c) < 0.85 || slowness(c) > 1.7) return 'weak';
+    return 'learning';
+  }
+  function weight(c) {
+    let w = 0.15 + errRate(c) * 5 + Math.max(0, slowness(c) - 1) * 0.9;
+    if (isFocus(c) && !mastered(c)) w += 0.6;
+    return w;
+  }
+  function pickW(chars, mult) {
+    const arr = chars.split('');
+    const ws = arr.map((c) => weight(c) * (mult ? mult(c) : 1));
+    let r = Math.random() * sum(ws);
+    for (let i = 0; i < arr.length; i++) { r -= ws[i]; if (r <= 0) return arr[i]; }
+    return arr[arr.length - 1];
+  }
+
+  // ---------- text generation ----------
+  const D = () => pickW(DIGITS);
+  const N = (k) => { let s = ''; for (let i = 0; i < k; i++) s += D(); return s; };
+  const Nz = (k) => pickW('123456789') + N(k - 1);
+  function math() {
+    const a = +Nz(2), b = +Nz(rand(1, 2)), op = pick(['+', '-', '*']);
+    const r = op === '+' ? a + b : op === '-' ? a - b : a * b;
+    return `${a} ${op} ${b} = ${r}`;
+  }
+  const NUMERIC = [
+    () => N(rand(2, 4)),
+    () => Nz(rand(3, 5)),
+    () => '$' + Nz(rand(1, 3)) + '.' + N(2),
+    () => Nz(2) + '%',
+    () => '20' + N(2) + '-0' + pickW('123456789') + '-' + pickW('12') + D(),
+    () => pickW('01') + D() + ':' + pickW('012345') + D(),
+    () => '(' + Nz(3) + ') ' + Nz(3) + '-' + N(4),
+    () => '0.' + N(rand(2, 3)),
+    () => Nz(1) + '.' + N(rand(1, 2)),
+    () => math(),
+    () => Nz(rand(1, 2)) + ',' + N(3),
+    () => '#' + Nz(rand(2, 4)),
+    () => 'v' + D() + '.' + D() + '.' + Nz(rand(1, 2)),
+    () => Nz(rand(1, 2)) + 'x' + Nz(rand(1, 2)),
+    () => 'room ' + Nz(3),
+  ];
+  const TEMPLATES = [
+    'x = (§ + §) * ¤;', 'arr[§] = §;', 'if (n >= §) {', 'return n % §;', '{ id: §, qty: § }',
+    'user§@mail.com', 'a != b && c <= §', 'x || y', 'f(x) = x^¤ - §', '"key": [§, §]',
+    'path/to/file_§.txt', '~/notes/§.md', '<td>§</td>', '§% off!', '($§.¤¤)', 'x += §;', 'i++; j--;',
+    '#§ @team', "s = '§';", 'C:\\data\\§', '`v§`', 'a ? b : c;', 'x = y / ¤;', '§ < § > ¤', 'a & b | c',
+    '*bold* _§_', 'site.io/?p=§&q=§', '[§, §, §]', '(§ - §) / ¤', '$§,¤¤¤', '~§', 'a == b',
+    'x: §; y: §;', 'Q¤: §%', 'n = §!', 'is it §?', 'list[-¤]', 'a = {b: §}', 'w-§ h-§', 'k=v+§',
+  ];
+  const fill = (t) => t.replace(/§/g, () => Nz(rand(1, 3))).replace(/¤/g, () => D());
+  const WORDS = ('the and for are but not you all any can had her was one our out day get has him his how man new now old see two way who boy did its let put say she too use quick jumps over lazy brown fox page room table chair while maybe every about after again could first great house large place right small sound spell still study their there these thing think three water where which world would write year price order total item invoice amount date time phone code number account balance budget market ticket floor level score').split(' ');
+  const PAIRS = { '(': ')', '[': ']', '{': '}', '<': '>' };
+  const RPAIRS = { ')': '(', ']': '[', '}': '{', '>': '<' };
+
+  function drill(c) {
+    if (DIGITS.includes(c)) {
+      const i = DIGITS.indexOf(c);
+      const n = pick([DIGITS[i - 1], DIGITS[i + 1]].filter(Boolean));
+      return pick([c + c, c + n, n + c, c + n + c, n + c + n, c + c + n, n + c + c, c + D() + c, c + n + c + n]);
+    }
+    if (PAIRS[c]) return c + N(rand(1, 3)) + PAIRS[c];
+    if (RPAIRS[c]) return RPAIRS[c] + N(rand(1, 3)) + c;
+    if (SYMBOLS.includes(c)) return pick([D() + c + D(), c + N(2), N(2) + c, c + D() + c]);
+    if (LETTERS.includes(c)) { const ws = WORDS.filter((w) => w.includes(c)); return ws.length ? pick(ws) : c + c + c; }
+    return c;
+  }
+  function tokenFor(c) {
+    const mode = settings.mode;
+    if (DIGITS.includes(c)) {
+      if (mode === 'code') { for (let i = 0; i < 8; i++) { const t = fill(pick(TEMPLATES)); if (t.includes(c)) return t; } }
+      if (Math.random() < 0.4) return drill(c);
+      for (let i = 0; i < 6; i++) { const t = pick(NUMERIC)(); if (t.includes(c)) return t; }
+      return drill(c);
+    }
+    if (SYMBOLS.includes(c)) {
+      const ts = TEMPLATES.filter((t) => t.includes(c));
+      if (ts.length && Math.random() < 0.7) return fill(pick(ts));
+      return drill(c);
+    }
+    return drill(c);
+  }
+  function targetPool() {
+    switch (settings.mode) {
+      case 'numbers': return { chars: DIGITS };
+      case 'symbols': return { chars: SYMBOLS };
+      case 'code': return { chars: DIGITS + SYMBOLS };
+      case 'focus': return { chars: settings.focus || DIGITS };
+      default: return { chars: DIGITS + SYMBOLS + LETTERS, mult: (c) => (LETTERS.includes(c) ? 0.5 : SYMBOLS.includes(c) ? 0.6 : 1) };
+    }
+  }
+  function focusToken() {
+    const f = settings.focus || DIGITS;
+    if (Math.random() < 0.3) return drill(pickW(f));
+    let s = ''; const n = rand(2, 5);
+    for (let i = 0; i < n; i++) s += pickW(f);
+    return s;
+  }
+  function makeTokens(target) {
+    computeMedian();
+    const tokens = []; let len = 0;
+    const { chars, mult } = targetPool();
+    while (len < target) {
+      let t;
+      if (settings.mode === 'focus') t = focusToken();
+      else if (settings.mode === 'adaptive' && Math.random() < 0.12) t = pick(WORDS);
+      else t = tokenFor(pickW(chars, mult));
+      tokens.push(t); len += t.length + 1;
+    }
+    return tokens;
+  }
+  function makeLine() { return makeTokens(rand(42, 54)).join(' '); }
+
+  // ---------- reinforcement ----------
+  let reinforceQueue = []; // {c, ctx}
+  function reinforcementTokens() {
+    const out = []; const seen = new Set();
+    for (const { c, ctx } of reinforceQueue) {
+      if (seen.has(c) || seen.size >= 4) continue;
+      seen.add(c);
+      if (c !== ' ') out.push(drill(c), drill(c));
+      if (ctx && ctx.trim().length >= 2) out.push(ctx.trim());
+    }
+    return { tokens: out, keys: [...seen] };
+  }
+
+  // ---------- session state ----------
+  let line = '', next = '', pos = 0, missedHere = false, missedPositions = new Set();
+  let lastHitTime = 0, lastKeyTime = 0, streak = 0;
+  let lesson, reinforcedKeys = [];
+  function newLesson() {
+    lesson = { lines: 0, firstTry: 0, attempted: 0, correct: 0, active: 0, misses: {}, conf: {}, best: 0 };
+    streak = 0;
+  }
+
+  function startLine(text) {
+    line = text; pos = 0; missedHere = false; missedPositions = new Set(); lastHitTime = 0;
+    render();
+  }
+  function advanceLine() {
+    lesson.lines++;
+    persist();
+    if (lesson.lines >= settings.lessonLines) { showSummary(); return; }
+    const upcoming = withReinforcement(next);
+    next = makeLine();
+    startLine(upcoming);
+  }
+  // Put drills for the keys just missed at the front of the line, trimming the end to keep its length sensible.
+  function withReinforcement(base) {
+    const r = reinforcementTokens();
+    reinforceQueue = [];
+    reinforcedKeys = r.keys;
+    if (!r.tokens.length) return base;
+    const rest = base.split(' ');
+    const head = r.tokens.join(' ');
+    while (rest.length > 1 && head.length + rest.join(' ').length > 64) rest.pop();
+    return (head + ' ' + rest.join(' ')).trim();
+  }
+  function regenerate() {
+    reinforceQueue = []; reinforcedKeys = [];
+    next = makeLine();
+    startLine(makeLine());
+  }
+
+  // ---------- input ----------
+  function handleChar(k) {
+    if (drawer) setDrawer(null);
+    document.body.classList.add('typing');
+    const now = performance.now();
+    const exp = line[pos];
+    if (lastKeyTime) lesson.active += Math.min(now - lastKeyTime, 2000);
+    lastKeyTime = now;
+    if (k === exp) {
+      if (!missedHere) {
+        const ms = pos > 0 && lastHitTime && now - lastHitTime < 3000 ? now - lastHitTime : null;
+        recordHit(exp, exp === ' ' ? null : ms);
+        lesson.firstTry++; lesson.attempted++;
+        streak++; lesson.best = Math.max(lesson.best, streak);
+      }
+      lesson.correct++;
+      animateKey(exp, 'hit');
+      pos++; missedHere = false; lastHitTime = now;
+      if (pos >= line.length) { advanceLine(); return; }
+      render();
+    } else {
+      if (!missedHere) {
+        missedHere = true; missedPositions.add(pos);
+        recordMiss(exp, k);
+        lesson.attempted++;
+        lesson.misses[exp] = (lesson.misses[exp] || 0) + 1;
+        const pair = `${k}→${exp}`;
+        lesson.conf[pair] = (lesson.conf[pair] || 0) + 1;
+        reinforceQueue.push({ c: exp, ctx: line.slice(Math.max(0, pos - 1), pos + 2) });
+        streak = 0;
+      }
+      animateKey(k, 'miss');
+      const stage = $('stage');
+      stage.classList.remove('flash-bad'); void stage.offsetWidth; stage.classList.add('flash-bad');
+      render(k);
+    }
+  }
+  let noDelTimer;
+  function flashNoDelete() {
+    const el = $('noDelete'); el.classList.add('show');
+    clearTimeout(noDelTimer); noDelTimer = setTimeout(() => el.classList.remove('show'), 1100);
+  }
+  function animateKey(c, cls) {
+    const m = charMap[c]; if (!m) return;
+    m.el.classList.add(cls);
+    setTimeout(() => m.el.classList.remove(cls), cls === 'miss' ? 220 : 90);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!$('overlay').hidden) {
+      if (e.key === 'Enter') { e.preventDefault(); closeSummary(); }
+      return;
+    }
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON')) {
+      if (t.tagName !== 'BUTTON' || e.key.length !== 1) return;
+      t.blur();
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); flashNoDelete(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); return; }
+    if (e.key.length !== 1) return; // Shift, Dead keys, arrows…
+    e.preventDefault();
+    handleChar(e.key);
+  });
+
+  // ---------- rendering ----------
+  function describe(c) {
+    const m = charMap[c];
+    if (!m) return null;
+    const f = m.finger;
+    if (f === 'th') return { f, text: 'Thumb' };
+    const home = FINGERS[f].home;
+    let reach;
+    if (m.row === 0) reach = `up two rows from ${home}`;
+    else if (m.row === 1) reach = `up one row from ${home}`;
+    else if (m.row === 3) reach = `down one row from ${home}`;
+    else reach = m.base === home.toLowerCase() || m.base === home ? 'home key' : `from ${home}`;
+    const b = m.base;
+    if (f === 'li' && (STRETCH_L.has(b) || b === '6')) reach += b === '6' ? ', stretch far right' : ', stretch right';
+    if (f === 'ri' && (STRETCH_R.has(b) || b === '6')) reach += ', stretch left';
+    if (OUTER.has(b)) reach += ', reach outward';
+    let shift = '';
+    if (m.shift) shift = f[0] === 'l' ? ' + Right Shift (right pinky)' : ' + Left Shift (left pinky)';
+    return { f, text: `${FINGERS[f].name}, ${reach}${shift}` };
+  }
+
+  function render(wrongKey) {
+    // line
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < line.length; i++) {
+      const s = document.createElement('span');
+      const c = line[i];
+      let cls = 'ch';
+      if (c === ' ') cls += ' sp';
+      if (i < pos) cls += ' done' + (missedPositions.has(i) ? ' fixed' : '');
+      if (i === pos) cls += ' cur' + (missedHere ? ' err' : '');
+      s.className = cls;
+      s.textContent = c === ' ' ? '·' : c;
+      frag.appendChild(s);
+      if (c === ' ') frag.appendChild(document.createElement('wbr'));
+    }
+    $('line').replaceChildren(frag);
+    $('next').textContent = next;
+
+    $('reinforce').innerHTML = reinforcedKeys.length
+      ? `Reinforcing keys you missed: ${reinforcedKeys.map((k) => `<span class="k">${esc(showChar(k))}</span>`).join('')}`
+      : `<span class="focus-cue">Focus keys: ${esc(settings.focus.split('').join(' ') || 'none')}</span>`;
+
+    // hint + keyboard highlight
+    const exp = line[pos];
+    const d = describe(exp);
+    document.querySelectorAll('.key.target').forEach((el) => el.classList.remove('target', 'err'));
+    let hint = `<span class="big">${esc(showChar(exp))}</span>`;
+    if (d) {
+      hint += `<span class="finger" style="--fc: var(--f-${d.f})"><span class="dot"></span>${esc(d.text)}</span>`;
+      const m = charMap[exp];
+      m.el.classList.add('target'); if (missedHere) m.el.classList.add('err');
+      if (m.shift) {
+        const sk = specialEls[m.finger[0] === 'l' ? 'ShiftR' : 'ShiftL'];
+        sk.classList.add('target');
+      }
+    }
+    setHandGoals(exp);
+    if (missedHere && wrongKey !== undefined) hint += `<span class="miss">You typed ${esc(showChar(wrongKey))}. Type ${esc(showChar(exp))} to continue.</span>`;
+    else if (missedHere) hint += `<span class="miss">Type ${esc(showChar(exp))} to continue.</span>`;
+    $('hint').innerHTML = hint;
+
+    renderStats();
+  }
+
+  function lessonAcc() { return lesson.attempted ? (100 * lesson.firstTry) / lesson.attempted : 100; }
+  function lessonWpm() { return lesson.active > 1000 ? (lesson.correct / 5) / (lesson.active / 60000) : 0; }
+  function renderStats() {
+    $('sAcc').textContent = lessonAcc().toFixed(1) + '%';
+    $('sWpm').textContent = Math.round(lessonWpm());
+    $('sStreak').textContent = streak;
+    $('sLine').textContent = `${Math.min(lesson.lines + 1, settings.lessonLines)}/${settings.lessonLines}`;
+  }
+
+  function cellHTML(c) {
+    const s = peek(c); const a = recentAcc(c);
+    const acc = a == null ? '—' : Math.round(a * 100) + '%';
+    const ms = s && s.ms ? Math.round(s.ms) + 'ms' : '';
+    return `<button type="button" class="cell st-${status(c)}${isFocus(c) ? ' focus' : ''}" data-c="${esc(c)}" title="${isFocus(c) ? 'Remove from' : 'Add to'} focus keys"><span class="c">${esc(c)}</span><span class="a">${acc}</span><span class="m">${ms || '&nbsp;'}</span></button>`;
+  }
+  function renderGrids() {
+    computeMedian();
+    $('gridDigits').innerHTML = DIGITS.split('').map(cellHTML).join('');
+    $('gridSymbols').innerHTML = SYMBOLS.split('').map(cellHTML).join('');
+    // heatmap
+    Object.keys(charMap).forEach((c) => {
+      const m = charMap[c]; if (m.shift && c !== ' ') return;
+      const vals = [c, LETTERS.includes(c) ? c.toUpperCase() : Object.keys(charMap).find((k) => charMap[k].el === m.el && charMap[k].shift)]
+        .filter(Boolean).map((k) => { const a = recentAcc(k); return a == null ? 0 : 1 - a; });
+      m.el.style.setProperty('--heat', Math.round(Math.min(1, Math.max(...vals) * 2.5) * 85) + '%');
+    });
+  }
+
+  // ---------- summary ----------
+  function showSummary() {
+    const acc = lessonAcc(), wpm = lessonWpm();
+    const prev = history[history.length - 1];
+    history.push({ t: Date.now(), acc, wpm, chars: lesson.correct, mode: settings.mode });
+    persist();
+    const delta = (cur, old, unit) => {
+      if (old == null) return '';
+      const d = cur - old; if (Math.abs(d) < 0.05) return '';
+      return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d.toFixed(1)}${unit} vs last</span>`;
+    };
+    $('sumTitle').textContent = acc === 100 ? 'Lesson complete with no mistakes' : 'Lesson complete';
+    $('sumBig').innerHTML =
+      `<div><b>${acc.toFixed(1)}%</b><span>Accuracy</span> ${delta(acc, prev && prev.acc, '%')}</div>` +
+      `<div><b>${Math.round(wpm)}</b><span>WPM</span> ${delta(wpm, prev && prev.wpm, '')}</div>` +
+      `<div><b>${lesson.best}</b><span>Best streak</span></div>` +
+      `<div><b>${lesson.correct}</b><span>Keys typed</span></div>`;
+    const missed = Object.entries(lesson.misses).sort((a, b) => b[1] - a[1]);
+    $('sumMissed').innerHTML = `<div class="label">Keys you missed</div>` + (missed.length
+      ? `<div class="chips">${missed.map(([c, n]) => `<span class="chip bad">${esc(showChar(c))} ×${n}</span>`).join('')}</div>`
+      : `<p class="muted">None. Every key was right on the first try.</p>`);
+    const conf = Object.entries(lesson.conf).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    $('sumConf').innerHTML = conf.length
+      ? `<div class="label">Mix-ups (typed → wanted)</div><div class="chips">${conf.map(([p, n]) => { const [t, w] = p.split('→'); return `<span class="chip">${esc(showChar(t))} for ${esc(showChar(w))} ×${n}</span>`; }).join('')}</div>`
+      : '';
+    const fk = settings.focus.split('');
+    $('sumFocus').innerHTML = fk.length ? `<div class="label">Focus keys, last 30 tries</div><div class="mastery">${fk.map((c) => {
+      const a = recentAcc(c); const pct = a == null ? 0 : Math.round(a * 100);
+      return `<span>${esc(c)}</span><div class="bar st-${status(c)}"><i style="width:${pct}%"></i></div><span>${a == null ? '—' : pct + '%'}</span>`;
+    }).join('')}</div>` : '';
+    $('overlay').hidden = false;
+    $('nextLesson').focus();
+  }
+  function closeSummary() {
+    $('overlay').hidden = true;
+    $('nextLesson').blur();
+    newLesson();
+    renderGrids();
+    const first = withReinforcement(next);
+    next = makeLine();
+    startLine(first);
+  }
+
+  // ---------- settings UI ----------
+  function applyVisibility() {
+    $('kb').hidden = !settings.keyboard;
+    $('legend').hidden = !settings.keyboard || settings.heat;
+    $('hands').hidden = !settings.hands;
+    $('kbwrap').classList.toggle('with-hands', settings.hands);
+    $('guide').hidden = !settings.keyboard;
+    $('kb').classList.toggle('heat', settings.heat);
+    measureHands();
+    if (line) setHandGoals(line[pos]);
+  }
+  function syncControls() {
+    $('mode').value = settings.mode;
+    $('focus').value = settings.focus;
+    $('lessonLen').value = String(settings.lessonLines);
+    $('six').value = settings.six;
+    $('tKeyboard').checked = settings.keyboard;
+    $('tHands').checked = settings.hands;
+    $('tHeat').checked = settings.heat;
+  }
+  function cleanFocus(v) {
+    const valid = DIGITS + SYMBOLS + LETTERS;
+    return [...new Set(v.toLowerCase().split('').filter((c) => valid.includes(c)))].join('');
+  }
+  $('mode').addEventListener('change', (e) => { settings.mode = e.target.value; persist(); e.target.blur(); regenerate(); });
+  $('lessonLen').addEventListener('change', (e) => { settings.lessonLines = +e.target.value; persist(); e.target.blur(); renderStats(); });
+  $('six').addEventListener('change', (e) => { settings.six = e.target.value; persist(); e.target.blur(); buildKeyboard(); measureHands(); renderGrids(); render(); });
+  $('focus').addEventListener('change', (e) => { settings.focus = cleanFocus(e.target.value); e.target.value = settings.focus; persist(); e.target.blur(); renderGrids(); regenerate(); });
+  $('focus').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+  [['tKeyboard', 'keyboard'], ['tHands', 'hands'], ['tHeat', 'heat']].forEach(([id, k]) => {
+    $(id).addEventListener('change', (e) => { settings[k] = e.target.checked; persist(); applyVisibility(); e.target.blur(); });
+  });
+  $('newLine').addEventListener('click', (e) => { e.currentTarget.blur(); regenerate(); });
+  function onGridClick(e) {
+    const b = e.target.closest('.cell'); if (!b) return;
+    const c = b.dataset.c;
+    settings.focus = isFocus(c) ? settings.focus.replace(c, '') : settings.focus + c;
+    $('focus').value = settings.focus; persist(); b.blur(); renderGrids(); render();
+  }
+  $('gridDigits').addEventListener('click', onGridClick);
+  $('gridSymbols').addEventListener('click', onGridClick);
+  $('nextLesson').addEventListener('click', closeSummary);
+
+  // Settings and Progress open one at a time and close as soon as you type
+  let drawer = null;
+  function setDrawer(which) {
+    drawer = which;
+    [['settings', 'btnSettings', 'settingsPanel'], ['progress', 'btnProgress', 'progressPanel']].forEach(([k, b, panel]) => {
+      $(panel).hidden = which !== k;
+      $(b).setAttribute('aria-expanded', String(which === k));
+    });
+    if (which === 'progress') renderGrids();
+    if (which) document.body.classList.remove('typing');
+  }
+  $('btnSettings').addEventListener('click', (e) => { setDrawer(drawer === 'settings' ? null : 'settings'); e.currentTarget.blur(); });
+  $('btnProgress').addEventListener('click', (e) => { setDrawer(drawer === 'progress' ? null : 'progress'); e.currentTarget.blur(); });
+  document.addEventListener('mousemove', () => document.body.classList.remove('typing'));
+
+  // two-step reset (no confirm() dialogs)
+  function resetIdle() {
+    $('resetRow').innerHTML = '<button id="reset" type="button">Reset all progress</button>';
+    $('reset').addEventListener('click', resetAsk);
+  }
+  function resetAsk() {
+    $('resetRow').innerHTML = 'Erase every key\'s history? <button id="resetYes" type="button">Erase</button><button id="resetNo" type="button">Keep</button>';
+    $('resetYes').addEventListener('click', () => { stats = {}; history = []; persist(); newLesson(); renderGrids(); regenerate(); resetIdle(); });
+    $('resetNo').addEventListener('click', resetIdle);
+  }
+  $('reset').addEventListener('click', resetAsk);
+
+  // ---------- boot ----------
+  syncControls();
+  buildKeyboard();
+  applyVisibility();
+  newLesson();
+  renderGrids();
+  next = makeLine();
+  startLine(makeLine());
+  if (window.ResizeObserver) new ResizeObserver(() => { measureHands(); if (line) setHandGoals(line[pos]); }).observe($('kbwrap'));
+  // refresh the progress grid every few lines without rebuilding on each keystroke
+  setInterval(renderGrids, 4000);
+})();
+</script>
+</body>
+</html>
